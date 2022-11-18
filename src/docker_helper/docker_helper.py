@@ -76,7 +76,9 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = '--user {}'.format(user_name) if user_name else ''
 
-    def create_containter(self, docker_mounts: DockerMounts):
+    def create_containter(self, docker_mounts: DockerMounts = None):
+        if docker_mounts is None:
+            docker_mounts = DockerMounts()
         docker_command = "docker run -it -d --rm --privileged --name {} " \
             "--env DISPLAY={} --env QT_X11_NO_MITSHM=1 " \
             "--ipc host --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
