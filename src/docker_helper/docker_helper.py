@@ -76,12 +76,12 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = f'--user {user_name}' if user_name else ''
 
-    def create_containter(self, docker_mounts: DockerMounts = None):
+    def create_containter(self, net='host', docker_mounts: DockerMounts = None):
         if docker_mounts is None:
             docker_mounts = DockerMounts()
         docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \
             f"--env DISPLAY={os.environ['DISPLAY']} --env QT_X11_NO_MITSHM=1 " \
-            f"--ipc host --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
+            f"--ipc host --net {net} --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
             f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {docker_mounts.volume_args} {self.image_name}"
         return_code = subprocess.call(docker_command.split())
         if return_code != 0:
