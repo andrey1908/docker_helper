@@ -8,13 +8,13 @@ class RosDockerContainer(DockerContainer):
 
     def check_output(self, command):
         if self.ros_version:
-            command = "source /opt/ros/{}/setup.bash && ".format(self.ros_version) + command
+            command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
         output = super().check_output(command)
         return output
 
     def run_command(self, command, suppress_output=False):
         if self.ros_version:
-            command = "source /opt/ros/{}/setup.bash && ".format(self.ros_version) + command
+            command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
         return_code = super().run_command(command, suppress_output=suppress_output)
         return return_code
 
@@ -22,7 +22,7 @@ class RosDockerContainer(DockerContainer):
         if not session:
             raise RuntimeError("Session name not specified")
         if self.ros_version:
-            command = "source /opt/ros/{}/setup.bash && ".format(self.ros_version) + command
+            command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
         super().run_command_async(command, session)
 
     def create_containter(self, docker_mounts: DockerMounts = None):
@@ -31,8 +31,8 @@ class RosDockerContainer(DockerContainer):
         get_ros_version_command = "rosversion -d"
         self.ros_version = self.check_output(get_ros_version_command).replace('\n', '').replace('\r', '')
 
-        set_ros_ip_command = "export ROS_IP={}".format(self.container_ip)
-        return_code = self.run_command("echo '{}' >> ~/.bashrc".format(set_ros_ip_command))
+        set_ros_ip_command = f"export ROS_IP={self.container_ip}"
+        return_code = self.run_command(f"echo '{set_ros_ip_command}' >> ~/.bashrc")
         if return_code != 0:
             raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
 
@@ -45,44 +45,44 @@ class RosDockerContainer(DockerContainer):
                 raise RuntimeError("Error waiting for ros master")
 
     def connect_to_ros_master(self, ros_master_ip):
-        connect_to_ros_master_command = "export ROS_MASTER_URI=http://{}:11311".format(ros_master_ip)
-        return_code = self.run_command("echo '{}' >> ~/.bashrc".format(connect_to_ros_master_command))
+        connect_to_ros_master_command = f"export ROS_MASTER_URI=http://{ros_master_ip}:11311"
+        return_code = self.run_command(f"echo '{connect_to_ros_master_command}' >> ~/.bashrc")
         if return_code != 0:
             raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc to connect to ros master")
 
     def rosrun(self, package, executable, arguments='', source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "rosrun {} {} {}".format(package, executable, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"rosrun {package} {executable} {arguments}"
         return_code = self.run_command(command)
         return return_code
 
     def roslaunch(self, package, launch, arguments='', source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "roslaunch {} {} {}".format(package, launch, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"roslaunch {package} {launch} {arguments}"
         return_code = self.run_command(command)
         if return_code != 0:
-            raise RuntimeError("Error running roslaunch:\n  {}".format(command))
+            raise RuntimeError(f"Error running roslaunch:\n  {command}")
 
     def roslaunch_nopkg(self, launch_filename, arguments='', source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "roslaunch {} {}".format(launch_filename, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"roslaunch {launch_filename} {arguments}"
         return_code = self.run_command(command)
         if return_code != 0:
-            raise RuntimeError("Error running roslaunch:\n  {}".format(command))
+            raise RuntimeError(f"Error running roslaunch:\n  {command}")
 
     def rosrun_async(self, package, executable, arguments='', session='', source_files=tuple()):
         if not session:
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "rosrun {} {} {}".format(package, executable, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"rosrun {package} {executable} {arguments}"
         self.run_command_async(command, session)
 
     def roslaunch_async(self, package, launch, arguments='', session='', source_files=tuple()):
@@ -90,8 +90,8 @@ class RosDockerContainer(DockerContainer):
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "roslaunch {} {} {}".format(package, launch, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"roslaunch {package} {launch} {arguments}"
         self.run_command_async(command, session)
 
     def roslaunch_nopkg_async(self, launch_filename, arguments='', session='', source_files=tuple()):
@@ -99,19 +99,19 @@ class RosDockerContainer(DockerContainer):
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
-        command = ''.join("source {} && ".format(source_file) for source_file in source_files)
-        command += "roslaunch {} {}".format(launch_filename, arguments)
+        command = ''.join(f"source {source_file} && " for source_file in source_files)
+        command += f"roslaunch {launch_filename} {arguments}"
         self.run_command_async(command, session)
 
     def rosbag_play(self, rosbag_filenames, arguments=''):
         if isinstance(rosbag_filenames, str):
             rosbag_filenames = [rosbag_filenames]
-        return_code = self.rosrun("rosbag", "play", '--clock {} {}'.format(arguments, ' '.join(rosbag_filenames)))
+        return_code = self.rosrun("rosbag", "play", f"--clock {arguments} {' '.join(rosbag_filenames)}")
         if return_code != 0:
             raise RuntimeError("Error playing rosbags")
             
     def use_sim_time(self, value):
-        command = "rosparam set use_sim_time {}".format(str(value))
+        command = f"rosparam set use_sim_time {str(value)}"
         return_code = self.run_command(command)
         if return_code != 0:
             raise RuntimeError("Error setting use_sim_time")

@@ -22,7 +22,7 @@ class DockerMounts:
         host_common_path = osp.commonpath(list(map(lambda filename: osp.dirname(filename), host_filenames)))
         docker_files = list(map(lambda host_filename: osp.relpath(host_filename, host_common_path), host_filenames))
         docker_filenames = list(map(lambda docker_file: osp.join(docker_mount_folder, docker_file), docker_files))
-        volume = '{}:{}:rw'.format(host_common_path, docker_mount_folder)
+        volume = f'{host_common_path}:{docker_mount_folder}:rw'
         if single_file:
             return docker_filenames[0], volume
         else:
@@ -38,7 +38,7 @@ class DockerMounts:
         host_common_path = osp.commonpath(host_absolute_folders)
         docker_folders = list(map(lambda host_absolute_folder: osp.relpath(host_absolute_folder, host_common_path), host_absolute_folders))
         docker_absolute_folders = list(map(lambda docker_folder: osp.normpath(osp.join(docker_mount_folder, docker_folder)), docker_folders))
-        volume = '{}:{}:rw'.format(host_common_path, docker_mount_folder)
+        volume = f'{host_common_path}:{docker_mount_folder}:rw'
         if single_folder:
             return docker_absolute_folders[0], volume
         else:
@@ -50,18 +50,18 @@ class DockerMounts:
                 continue
             if isinstance(host_file, list):
                 host_file = tuple(host_file)
-            docker_file, volume = DockerMounts.pass_files_to_docker(host_file, '/mnt/docker_mounts_{}'.format(len(self.mounted)))
+            docker_file, volume = DockerMounts.pass_files_to_docker(host_file, f'/mnt/docker_mounts_{len(self.mounted)}')
             self.mounted[host_file] = docker_file
-            self.volume_args = self.volume_args + '-v {} '.format(volume)
+            self.volume_args = self.volume_args + f'-v {volume} '
 
         for host_folder in self.host_folders:
             if host_folder is None:
                 continue
             if isinstance(host_folder, list):
                 host_folder = tuple(host_folder)
-            docker_folder, volume = DockerMounts.pass_folders_to_docker(host_folder, '/mnt/docker_mounts_{}'.format(len(self.mounted)))
+            docker_folder, volume = DockerMounts.pass_folders_to_docker(host_folder, f'/mnt/docker_mounts_{len(self.mounted)}')
             self.mounted[host_folder] = docker_folder
-            self.volume_args = self.volume_args + '-v {} '.format(volume)
+            self.volume_args = self.volume_args + f'-v {volume} '
 
     def __getitem__(self, key):
         if isinstance(key, list):
@@ -74,15 +74,15 @@ class DockerContainer:
         self.image_name = image_name
         self.container_name = container_name
         self.user_name = user_name
-        self.user_arg = '--user {}'.format(user_name) if user_name else ''
+        self.user_arg = f'--user {user_name}' if user_name else ''
 
     def create_containter(self, docker_mounts: DockerMounts = None):
         if docker_mounts is None:
             docker_mounts = DockerMounts()
-        docker_command = "docker run -it -d --rm --privileged --name {} " \
-            "--env DISPLAY={} --env QT_X11_NO_MITSHM=1 " \
-            "--ipc host --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
-            "-v /tmp/.X11-unix:/tmp/.X11-unix:rw {} {}".format(self.container_name, os.environ['DISPLAY'], docker_mounts.volume_args, self.image_name)
+        docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \
+            f"--env DISPLAY={os.environ['DISPLAY']} --env QT_X11_NO_MITSHM=1 " \
+            f"--ipc host --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
+            f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {docker_mounts.volume_args} {self.image_name}"
         return_code = subprocess.call(docker_command.split())
         if return_code != 0:
             raise RuntimeError("Error creating docker container")
@@ -95,8 +95,8 @@ class DockerContainer:
         self.home_directory = self.check_output(get_home_directory_command).replace('\n', '').replace('\r', '')
 
     def check_output(self, command):
-        docker_command = "docker exec -it {} {} /bin/bash -c".format(self.user_arg, self.container_name)
-        output = subprocess.check_output("{} '{}'".format(docker_command, command), shell=True)
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -c"
+        output = subprocess.check_output(f"{docker_command} '{command}'", shell=True)
         output = output.decode('utf-8')
         return output
 
@@ -105,29 +105,29 @@ class DockerContainer:
             stdout = subprocess.DEVNULL
         else:
             stdout = None
-        docker_command = "docker exec -it {} {} /bin/bash -ic".format(self.user_arg, self.container_name)
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic"
         return_code = subprocess.call(docker_command.split() + [command], stdout=stdout)
         return return_code
 
     def run_command_async(self, command, session=''):
         if not session:
             raise RuntimeError("Session name not specified")
-        async_command = "tmux new -d -s {} /bin/bash -c '{}'".format(session, command)
-        docker_command = "docker exec -it {} {} /bin/bash -ic".format(self.user_arg, self.container_name)
+        async_command = f"tmux new -d -s {session} /bin/bash -c '{command}'"
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic"
         return_code = subprocess.call(docker_command.split() + [async_command], stdout = subprocess.DEVNULL)
         if return_code != 0:
-            raise RuntimeError("Error running command in async mode:\n  {}".format(command))
+            raise RuntimeError(f"Error running command in async mode:\n  {command}")
 
     def stop_session(self, session):
-        stop_command = "(tmux send-keys -t ={}: C-c) && (tmux a -t ={} || true)".format(session, session)
-        docker_command = "docker exec -it {} {} /bin/bash -c".format(self.user_arg, self.container_name)
+        stop_command = f"(tmux send-keys -t ={session}: C-c) && (tmux a -t ={session} || true)"
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -c"
         return_code = subprocess.call(docker_command.split() + [stop_command])
         if return_code != 0:
-            raise RuntimeError("Error stopping session '{}'".format(session))
+            raise RuntimeError(f"Error stopping session '{session}'")
         return  # TODO: return exit status from tmux session
 
     def stop_container(self):
-        docker_command = "docker stop {}".format(self.container_name)
+        docker_command = f"docker stop {self.container_name}"
         return_code = subprocess.call(docker_command.split())
         if return_code != 0:
             raise RuntimeError("Error stopping docker container")
