@@ -6,6 +6,17 @@ class RosDockerContainer(DockerContainer):
         super().__init__(image_name, container_name, user_name=user_name)
         self.ros_version = None
 
+    def create_containter(self, net='host', docker_mounts: DockerMounts = None):
+        super().create_containter(net, docker_mounts)
+
+        get_ros_version_command = "rosversion -d"
+        self.ros_version = self.check_output(get_ros_version_command).replace('\n', '').replace('\r', '')
+
+        set_ros_ip_command = f"export ROS_IP={self.container_ip}"
+        return_code = self.run_command(f"echo '{set_ros_ip_command}' >> ~/.bashrc")
+        if return_code != 0:
+            raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
+
     def check_output(self, command):
         if self.ros_version:
             command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
@@ -24,17 +35,6 @@ class RosDockerContainer(DockerContainer):
         if self.ros_version:
             command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
         super().run_command_async(command, session)
-
-    def create_containter(self, net='host', docker_mounts: DockerMounts = None):
-        super().create_containter(net, docker_mounts)
-
-        get_ros_version_command = "rosversion -d"
-        self.ros_version = self.check_output(get_ros_version_command).replace('\n', '').replace('\r', '')
-
-        set_ros_ip_command = f"export ROS_IP={self.container_ip}"
-        return_code = self.run_command(f"echo '{set_ros_ip_command}' >> ~/.bashrc")
-        if return_code != 0:
-            raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
 
     def start_roscore(self, wait=True):
         self.run_command_async("roscore", 'roscore')
