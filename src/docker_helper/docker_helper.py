@@ -76,11 +76,11 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = '--user {}'.format(user_name) if user_name else ''
 
-    def create_containter(self, volume_args):
+    def create_containter(self, docker_mounts: DockerMounts):
         docker_command = "docker run -it -d --rm --privileged --name {} " \
             "--env DISPLAY={} --env QT_X11_NO_MITSHM=1 " \
             "--ipc host --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
-            "-v /tmp/.X11-unix:/tmp/.X11-unix:rw {} {}".format(self.container_name, os.environ['DISPLAY'], volume_args, self.image_name)
+            "-v /tmp/.X11-unix:/tmp/.X11-unix:rw {} {}".format(self.container_name, os.environ['DISPLAY'], docker_mounts.volume_args, self.image_name)
         return_code = subprocess.call(docker_command.split())
         if return_code != 0:
             raise RuntimeError("Error creating docker container")

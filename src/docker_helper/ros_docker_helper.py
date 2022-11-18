@@ -1,4 +1,4 @@
-from docker_helper import DockerContainer
+from .docker_helper import DockerMounts, DockerContainer
 
 
 class RosDockerContainer(DockerContainer):
@@ -25,8 +25,8 @@ class RosDockerContainer(DockerContainer):
             command = "source /opt/ros/{}/setup.bash && ".format(self.ros_version) + command
         super().run_command_async(command, session)
 
-    def create_containter(self, volume_args):
-        super().create_containter(volume_args)
+    def create_containter(self, docker_mounts: DockerMounts):
+        super().create_containter(docker_mounts)
 
         get_ros_version_command = "rosversion -d"
         self.ros_version = self.check_output(get_ros_version_command).replace('\n', '').replace('\r', '')
