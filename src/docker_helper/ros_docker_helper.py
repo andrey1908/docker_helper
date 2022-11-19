@@ -50,8 +50,8 @@ class RosDockerContainer(DockerContainer):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"rosrun {package} {executable} {arguments}"
-        returncode = self.run(command).returncode
-        return returncode
+        result = self.run(command)
+        return result
 
     def roslaunch(self, package, launch, arguments='', source_files=tuple()):
         if isinstance(source_files, str):
@@ -101,7 +101,7 @@ class RosDockerContainer(DockerContainer):
     def rosbag_play(self, rosbag_filenames, arguments=''):
         if isinstance(rosbag_filenames, str):
             rosbag_filenames = [rosbag_filenames]
-        returncode = self.rosrun("rosbag", "play", f"--clock {arguments} {' '.join(rosbag_filenames)}")
+        returncode = self.rosrun("rosbag", "play", f"--clock {arguments} {' '.join(rosbag_filenames)}").returncode
         if returncode != 0:
             raise RuntimeError("Error playing rosbags")
             
