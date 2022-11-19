@@ -1,4 +1,4 @@
-import subprocess
+import subprocess_tee
 import os
 import os.path as osp
 
@@ -76,58 +76,50 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = f'--user {user_name}' if user_name else ''
 
-    def create_containter(self, net='host', docker_mounts: DockerMounts = None):
+    def create_containter(self, net='host', docker_mounts: DockerMounts=None):
         if docker_mounts is None:
             docker_mounts = DockerMounts()
         docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \
             f"--env DISPLAY={os.environ['DISPLAY']} --env QT_X11_NO_MITSHM=1 " \
             f"--ipc host --net {net} --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
             f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {docker_mounts.volume_args} {self.image_name}"
-        return_code = subprocess.call(docker_command.split())
-        if return_code != 0:
+        returncode = subprocess_tee.run(docker_command).returncode
+        if returncode != 0:
             raise RuntimeError("Error creating docker container")
 
         get_container_ip_command = "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + self.container_name
-        container_ip = subprocess.check_output(get_container_ip_command.split())
-        self.container_ip = container_ip.decode('utf-8').replace('\n', '').replace('\r', '')[1:-1]
-        
+        self.container_ip = subprocess_tee.run(get_container_ip_command, quiet=True).stdout.rstrip()
+
         get_home_directory_command = "cd ~; pwd"
-        self.home_directory = self.check_output(get_home_directory_command).replace('\n', '').replace('\r', '')
+        self.home_directory = subprocess_tee.run(get_home_directory_command, quiet=True).stdout.rstrip()
 
-    def check_output(self, command):
-        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -c"
-        output = subprocess.check_output(f"{docker_command} '{command}'", shell=True)
-        output = output.decode('utf-8')
-        return output
+    def run(self, command: str, quiet=False):
+        command = command.replace('\\', '\\\\').replace('\'', '\\\'')
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic $'{command}'"
+        result = subprocess_tee.run(docker_command, quiet=quiet)
+        return result
 
-    def run_command(self, command, suppress_output=False):
-        if suppress_output:
-            stdout = subprocess.DEVNULL
-        else:
-            stdout = None
-        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic"
-        return_code = subprocess.call(docker_command.split() + [command], stdout=stdout)
-        return return_code
-
-    def run_command_async(self, command, session=''):
+    def run_async(self, command: str, session=''):
         if not session:
             raise RuntimeError("Session name not specified")
-        async_command = f"tmux new -d -s {session} /bin/bash -c '{command}'"
-        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic"
-        return_code = subprocess.call(docker_command.split() + [async_command], stdout = subprocess.DEVNULL)
-        if return_code != 0:
+        command = command.replace('\\', '\\\\').replace('\'', '\\\'')
+        async_command = f"tmux new -d -s {session} /bin/bash -c $'{command}'"
+        async_command = async_command.replace('\\', '\\\\').replace('\'', '\\\'')
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic $'{async_command}'"
+        returncode = subprocess_tee.run(docker_command, quiet=True).returncode
+        if returncode != 0:
             raise RuntimeError(f"Error running command in async mode:\n  {command}")
 
-    def stop_session(self, session):
+    def stop_session(self, session: str):
         stop_command = f"(tmux send-keys -t ={session}: C-c) && (tmux a -t ={session} || true)"
-        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -c"
-        return_code = subprocess.call(docker_command.split() + [stop_command])
-        if return_code != 0:
+        docker_command = f"docker exec -it {self.user_arg} {self.container_name} /bin/bash -ic '{stop_command}'"
+        returncode = subprocess_tee.run(docker_command, quiet=True).returncode
+        if returncode != 0:
             raise RuntimeError(f"Error stopping session '{session}'")
         return  # TODO: return exit status from tmux session
 
     def stop_container(self):
         docker_command = f"docker stop {self.container_name}"
-        return_code = subprocess.call(docker_command.split())
-        if return_code != 0:
+        returncode = subprocess_tee.run(docker_command).returncode
+        if returncode != 0:
             raise RuntimeError("Error stopping docker container")

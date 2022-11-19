@@ -6,5 +6,6 @@ setup(
     packages=['docker_helper'],
     package_dir={'': 'src'},
     install_requires=[
+        'subprocess-tee'
     ],
 )
