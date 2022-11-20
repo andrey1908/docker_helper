@@ -90,8 +90,11 @@ class DockerContainer:
         get_container_ip_command = "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + self.container_name
         self.container_ip = subprocess_tee.run(get_container_ip_command, quiet=True).stdout.rstrip()
 
+        suppress_redundant_output_command = "touch ~/.sudo_as_admin_successful"
+        self.run(suppress_redundant_output_command, quiet=True)
+
         get_home_directory_command = "cd ~; pwd"
-        self.home_directory = subprocess_tee.run(get_home_directory_command, quiet=True).stdout.rstrip()
+        self.home_directory = self.run(get_home_directory_command, quiet=True).stdout.rstrip()
 
     def run(self, command: str, quiet=False):
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
