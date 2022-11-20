@@ -45,7 +45,7 @@ class RosDockerContainer(DockerContainer):
         if returncode != 0:
             raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc to connect to ros master")
 
-    def rosrun(self, package, executable, arguments='', source_files=tuple()):
+    def rosrun(self, package, executable, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
@@ -53,7 +53,7 @@ class RosDockerContainer(DockerContainer):
         result = self.run(command)
         return result
 
-    def roslaunch(self, package, launch, arguments='', source_files=tuple()):
+    def roslaunch(self, package, launch, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
@@ -62,7 +62,7 @@ class RosDockerContainer(DockerContainer):
         if returncode != 0:
             raise RuntimeError(f"Error running roslaunch:\n  {command}")
 
-    def roslaunch_nopkg(self, launch_filename, arguments='', source_files=tuple()):
+    def roslaunch_nopkg(self, launch_filename, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
@@ -71,7 +71,7 @@ class RosDockerContainer(DockerContainer):
         if returncode != 0:
             raise RuntimeError(f"Error running roslaunch:\n  {command}")
 
-    def rosrun_async(self, package, executable, arguments='', session='', source_files=tuple()):
+    def rosrun_async(self, package, executable, arguments="", session='', source_files=tuple()):
         if not session:
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
@@ -80,7 +80,7 @@ class RosDockerContainer(DockerContainer):
         command += f"rosrun {package} {executable} {arguments}"
         self.run_async(command, session)
 
-    def roslaunch_async(self, package, launch, arguments='', session='', source_files=tuple()):
+    def roslaunch_async(self, package, launch, arguments="", session='', source_files=tuple()):
         if not session:
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
@@ -89,7 +89,7 @@ class RosDockerContainer(DockerContainer):
         command += f"roslaunch {package} {launch} {arguments}"
         self.run_async(command, session)
 
-    def roslaunch_nopkg_async(self, launch_filename, arguments='', session='', source_files=tuple()):
+    def roslaunch_nopkg_async(self, launch_filename, arguments="", session='', source_files=tuple()):
         if not session:
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
@@ -98,10 +98,11 @@ class RosDockerContainer(DockerContainer):
         command += f"roslaunch {launch_filename} {arguments}"
         self.run_async(command, session)
 
-    def rosbag_play(self, rosbag_filenames, arguments=''):
+    def rosbag_play(self, rosbag_filenames, arguments=""):
         if isinstance(rosbag_filenames, str):
             rosbag_filenames = [rosbag_filenames]
-        returncode = self.rosrun("rosbag", "play", f"--clock {arguments} {' '.join(rosbag_filenames)}").returncode
+        returncode = self.rosrun("rosbag", "play",
+            arguments=f"--clock {arguments} {' '.join(rosbag_filenames)}").returncode
         if returncode != 0:
             raise RuntimeError("Error playing rosbags")
             
