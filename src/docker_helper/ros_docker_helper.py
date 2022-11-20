@@ -58,18 +58,16 @@ class RosDockerContainer(DockerContainer):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"roslaunch {package} {launch} {arguments}"
-        returncode = self.run(command).returncode
-        if returncode != 0:
-            raise RuntimeError(f"Error running roslaunch:\n  {command}")
+        result = self.run(command)
+        return result
 
     def roslaunch_nopkg(self, launch_filename, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"roslaunch {launch_filename} {arguments}"
-        returncode = self.run(command).returncode
-        if returncode != 0:
-            raise RuntimeError(f"Error running roslaunch:\n  {command}")
+        result = self.run(command)
+        return result
 
     def rosrun_async(self, package, executable, arguments="", session='', source_files=tuple()):
         if not session:
