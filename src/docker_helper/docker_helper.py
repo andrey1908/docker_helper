@@ -76,7 +76,7 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = f'--user {user_name}' if user_name else ''
 
-    def create_containter(self, net='host', docker_mounts: DockerMounts=None):
+    def create_containter(self, docker_mounts: DockerMounts=None, net='host'):
         if docker_mounts is None:
             docker_mounts = DockerMounts()
         docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \

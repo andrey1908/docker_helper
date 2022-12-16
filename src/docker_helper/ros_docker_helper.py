@@ -6,8 +6,8 @@ class RosDockerContainer(DockerContainer):
         super().__init__(image_name, container_name, user_name=user_name)
         self.ros_version = None
 
-    def create_containter(self, net='host', docker_mounts: DockerMounts=None):
-        super().create_containter(net=net, docker_mounts=docker_mounts)
+    def create_containter(self, docker_mounts: DockerMounts=None, net='host'):
+        super().create_containter(docker_mounts=docker_mounts, net=net)
 
         get_ros_version_command = "rosversion -d"
         self.ros_version = self.run(get_ros_version_command, quiet=True).stdout.rstrip()
