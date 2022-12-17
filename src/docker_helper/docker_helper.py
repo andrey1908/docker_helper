@@ -50,7 +50,7 @@ class DockerMounts:
                 continue
             if isinstance(host_file, list):
                 host_file = tuple(host_file)
-            docker_file, volume = DockerMounts.pass_files_to_docker(host_file, f'/mnt/docker_mounts_{len(self.mounted)}')
+            docker_file, volume = DockerMounts.pass_files_to_docker(host_file, f'/mnt/mounted_{len(self.mounted)}')
             self.mounted[host_file] = docker_file
             self.volume_args = self.volume_args + f'-v {volume} '
 
@@ -59,7 +59,7 @@ class DockerMounts:
                 continue
             if isinstance(host_folder, list):
                 host_folder = tuple(host_folder)
-            docker_folder, volume = DockerMounts.pass_folders_to_docker(host_folder, f'/mnt/docker_mounts_{len(self.mounted)}')
+            docker_folder, volume = DockerMounts.pass_folders_to_docker(host_folder, f'/mnt/mounted_{len(self.mounted)}')
             self.mounted[host_folder] = docker_folder
             self.volume_args = self.volume_args + f'-v {volume} '
 
@@ -76,13 +76,13 @@ class DockerContainer:
         self.user_name = user_name
         self.user_arg = f'--user {user_name}' if user_name else ''
 
-    def create_containter(self, docker_mounts: DockerMounts=None, net='host'):
-        if docker_mounts is None:
-            docker_mounts = DockerMounts()
+    def create_containter(self, mounts: DockerMounts=None, net='host'):
+        if mounts is None:
+            mounts = DockerMounts()
         docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \
             f"--env DISPLAY={os.environ['DISPLAY']} --env QT_X11_NO_MITSHM=1 " \
             f"--ipc host --net {net} --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
-            f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {docker_mounts.volume_args} {self.image_name}"
+            f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {mounts.volume_args} {self.image_name}"
         returncode = subprocess_tee.run(docker_command).returncode
         if returncode != 0:
             raise RuntimeError("Error creating docker container")
