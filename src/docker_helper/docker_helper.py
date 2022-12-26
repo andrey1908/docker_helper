@@ -80,7 +80,7 @@ class DockerContainer:
         if mounts is None:
             mounts = DockerMounts()
         docker_command = f"docker run -it -d --rm --privileged --name {self.container_name} " \
-            f"--env DISPLAY={os.environ['DISPLAY']} --env QT_X11_NO_MITSHM=1 " \
+            f"--env DISPLAY={os.environ.get('DISPLAY', '')} --env QT_X11_NO_MITSHM=1 " \
             f"--ipc host --net {net} --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
             f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {mounts.volume_args} {self.image_name}"
         returncode = subprocess_tee.run(docker_command).returncode
