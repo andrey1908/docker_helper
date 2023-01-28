@@ -83,9 +83,15 @@ class DockerContainer:
             f"--env DISPLAY={os.environ.get('DISPLAY', '')} --env QT_X11_NO_MITSHM=1 " \
             f"--ipc host --net {net} --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all " \
             f"-v /tmp/.X11-unix:/tmp/.X11-unix:rw {mounts.volume_args} {self.image_name}"
-        returncode = subprocess_tee.run(docker_command).returncode
+        returncode = subprocess_tee.run(docker_command, quiet=True).returncode
+        # Could not create container. Maybe it is already running.
         if returncode != 0:
-            raise RuntimeError("Error creating docker container")
+            check_container_running_command = f"[ \"$(docker ps | grep {self.container_name})\" ]"
+            container_running = (subprocess_tee.run(check_container_running_command, quiet=True).returncode == 0)
+            if container_running:
+                print("Container is already running")
+            else:
+                raise RuntimeError(f"Could not create or find already running container '{self.container_name}'")
 
         get_container_ip_command = "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + self.container_name
         self.container_ip = subprocess_tee.run(get_container_ip_command, quiet=True).stdout.rstrip()
