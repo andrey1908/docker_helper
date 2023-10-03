@@ -1,4 +1,5 @@
 from .docker_helper import DockerMounts, DockerContainer
+import os
 
 
 class RosDockerContainer(DockerContainer):
@@ -17,6 +18,20 @@ class RosDockerContainer(DockerContainer):
             returncode = self.run(f"echo '{set_ros_ip_command}' >> ~/.bashrc", quiet=True).returncode
             if returncode != 0:
                 raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
+        else:
+            ros_ip = os.getenv("ROS_IP")
+            if ros_ip is not None:
+                set_ros_ip_command = f"export ROS_IP={ros_ip}"
+                returncode = self.run(f"echo '{set_ros_ip_command}' >> ~/.bashrc", quiet=True).returncode
+                if returncode != 0:
+                    raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
+
+            ros_master_uri = os.getenv("ROS_MASTER_URI")
+            if ros_master_uri is not None:
+                set_ros_master_uri_command = f"export ROS_MASTER_URI={ros_master_uri}"
+                returncode = self.run(f"echo '{set_ros_master_uri_command}' >> ~/.bashrc", quiet=True).returncode
+                if returncode != 0:
+                    raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc")
 
     def run(self, command, quiet=False):
         if self.ros_version:
@@ -40,10 +55,10 @@ class RosDockerContainer(DockerContainer):
                 raise RuntimeError("Error waiting for ros master")
 
     def connect_to_ros_master(self, ros_master_ip):
-        connect_to_ros_master_command = f"export ROS_MASTER_URI=http://{ros_master_ip}:11311"
-        returncode = self.run(f"echo '{connect_to_ros_master_command}' >> ~/.bashrc").returncode
+        set_ros_master_uri_command = f"export ROS_MASTER_URI=http://{ros_master_ip}:11311"
+        returncode = self.run(f"echo '{set_ros_master_uri_command}' >> ~/.bashrc").returncode
         if returncode != 0:
-            raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc to connect to ros master")
+            raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc")
 
     def rosrun(self, package, executable, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
