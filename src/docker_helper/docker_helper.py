@@ -10,7 +10,7 @@ class DockerMounts:
 
         self.mounted = dict()
         self.volume_args = ''
-        self.pass_to_docker()
+        self._pass_to_docker()
 
     @staticmethod
     def pass_files_to_docker(host_files, docker_mount_folder):
@@ -44,7 +44,7 @@ class DockerMounts:
         else:
             return docker_absolute_folders, volume
 
-    def pass_to_docker(self):
+    def _pass_to_docker(self):
         for host_file in self.host_files:
             if host_file is None:
                 continue
