@@ -63,6 +63,7 @@ class RosDockerContainer(DockerContainer):
     def rosrun(self, package, executable, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"rosrun {package} {executable} {arguments}"
         result = self.run(command)
@@ -71,16 +72,19 @@ class RosDockerContainer(DockerContainer):
     def roslaunch(self, package, launch, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"roslaunch {package} {launch} {arguments}"
         result = self.run(command)
         return result
 
-    def roslaunch_nopkg(self, launch_filename, arguments="", source_files=tuple()):
+    def roslaunch_nopkg(self, launch_file, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
             source_files = [source_files]
+        launch_file = self.resolve(launch_file)
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
-        command += f"roslaunch {launch_filename} {arguments}"
+        command += f"roslaunch {launch_file} {arguments}"
         result = self.run(command)
         return result
 
@@ -89,6 +93,7 @@ class RosDockerContainer(DockerContainer):
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"rosrun {package} {executable} {arguments}"
         self.run_async(command, session)
@@ -98,27 +103,31 @@ class RosDockerContainer(DockerContainer):
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
         command += f"roslaunch {package} {launch} {arguments}"
         self.run_async(command, session)
 
-    def roslaunch_nopkg_async(self, launch_filename, arguments="", session='', source_files=tuple()):
+    def roslaunch_nopkg_async(self, launch_file, arguments="", session='', source_files=tuple()):
         if not session:
             raise RuntimeError("Session name not specified")
         if isinstance(source_files, str):
             source_files = [source_files]
+        launch_file = self.resolve(launch_file)
+        source_files = list(map(self.resolve, source_files))
         command = ''.join(f"source {source_file} && " for source_file in source_files)
-        command += f"roslaunch {launch_filename} {arguments}"
+        command += f"roslaunch {launch_file} {arguments}"
         self.run_async(command, session)
 
-    def rosbag_play(self, rosbag_filenames, arguments=""):
-        if isinstance(rosbag_filenames, str):
-            rosbag_filenames = [rosbag_filenames]
+    def rosbag_play(self, rosbag_files, arguments=""):
+        if isinstance(rosbag_files, str):
+            rosbag_files = [rosbag_files]
+        rosbag_files = list(map(self.resolve, rosbag_files))
         returncode = self.rosrun("rosbag", "play",
-            arguments=f"--clock {arguments} {' '.join(rosbag_filenames)}").returncode
+            arguments=f"--clock {arguments} {' '.join(rosbag_files)}").returncode
         if returncode != 0:
             raise RuntimeError("Error playing rosbags")
-            
+
     def use_sim_time(self, value):
         command = f"rosparam set use_sim_time {str(value)}"
         returncode = self.run(command).returncode
