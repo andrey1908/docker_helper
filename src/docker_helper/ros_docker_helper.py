@@ -22,6 +22,7 @@ class RosDockerContainer(DockerContainer):
             self.pass_env_variable("ROS_MASTER_URI")
             self.pass_env_variable("ROS_IP")
 
+        self.pass_env_variable("ROS_DOMAIN_ID")
         self.pass_env_variable("RMW_IMPLEMENTATION")
 
     def set_env_variable(self, name, value):
