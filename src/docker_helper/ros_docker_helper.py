@@ -8,22 +8,20 @@ class RosDockerContainer(DockerContainer):
         self.ros_version = None
 
     def create_containter(self, mounts: DockerMounts=None, net='host'):
-        super().create_containter(mounts=mounts, net=net)
+        container_created = super().create_containter(mounts=mounts, net=net)
 
         get_ros_version_command = "rosversion -d"
         self.ros_version = self.run(get_ros_version_command, quiet=True).stdout.rstrip()
 
-        if self.container_ip:
-            set_ros_ip_command = f"export ROS_IP={self.container_ip}"
-            returncode = self.run(f"echo '{set_ros_ip_command}' >> ~/.bashrc", quiet=True).returncode
-            if returncode != 0:
-                raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
-        else:
-            self.pass_env_variable("ROS_MASTER_URI")
-            self.pass_env_variable("ROS_IP")
+        if container_created:
+            if self.container_ip:
+                self.set_env_variable("ROS_IP", self.container_ip)
+            else:
+                self.pass_env_variable("ROS_MASTER_URI")
+                self.pass_env_variable("ROS_IP")
 
-        self.pass_env_variable("ROS_DOMAIN_ID")
-        self.pass_env_variable("RMW_IMPLEMENTATION")
+            self.pass_env_variable("ROS_DOMAIN_ID")
+            self.pass_env_variable("RMW_IMPLEMENTATION")
 
     def set_env_variable(self, name, value):
         set_env_variable_command = f"export {name}={value}"

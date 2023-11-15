@@ -118,10 +118,12 @@ class DockerContainer:
                         continue
                     assert mount_entry['Type'] == 'bind'
                     self.mounts.add_folder(mount_entry['Source'], mount_entry['Destination'], mount_entry['Mode'])
+                container_created = False
             else:
                 raise RuntimeError(f"Could not create or find already running container '{self.container_name}'")
         else:
             self.mounts = deepcopy(mounts)
+            container_created = True
 
         get_container_ip_command = "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + self.container_name
         self.container_ip = subprocess_tee.run(get_container_ip_command, quiet=True).stdout.rstrip()
@@ -131,6 +133,8 @@ class DockerContainer:
 
         get_home_directory_command = "cd ~; pwd"
         self.home_directory = self.run(get_home_directory_command, quiet=True).stdout.rstrip()
+
+        return container_created
 
     def run(self, command: str, quiet=False):
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
