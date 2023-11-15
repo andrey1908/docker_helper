@@ -22,6 +22,7 @@ class RosDockerContainer(DockerContainer):
 
             self.pass_env_variable("ROS_DOMAIN_ID")
             self.pass_env_variable("RMW_IMPLEMENTATION")
+            self.pass_env_variable("ROS_LOCALHOST_ONLY")
 
     def set_env_variable(self, name, value):
         set_env_variable_command = f"export {name}={value}"
