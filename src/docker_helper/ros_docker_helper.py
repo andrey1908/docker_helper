@@ -19,19 +19,21 @@ class RosDockerContainer(DockerContainer):
             if returncode != 0:
                 raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
         else:
-            ros_ip = os.getenv("ROS_IP")
-            if ros_ip is not None:
-                set_ros_ip_command = f"export ROS_IP={ros_ip}"
-                returncode = self.run(f"echo '{set_ros_ip_command}' >> ~/.bashrc", quiet=True).returncode
-                if returncode != 0:
-                    raise RuntimeError("Error adding ROS_IP to ~/.bashrc")
+            self.pass_env_variable("ROS_MASTER_URI")
+            self.pass_env_variable("ROS_IP")
 
-            ros_master_uri = os.getenv("ROS_MASTER_URI")
-            if ros_master_uri is not None:
-                set_ros_master_uri_command = f"export ROS_MASTER_URI={ros_master_uri}"
-                returncode = self.run(f"echo '{set_ros_master_uri_command}' >> ~/.bashrc", quiet=True).returncode
-                if returncode != 0:
-                    raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc")
+        self.pass_env_variable("RMW_IMPLEMENTATION")
+
+    def set_env_variable(self, name, value):
+        set_env_variable_command = f"export {name}={value}"
+        returncode = self.run(f"echo '{set_env_variable_command}' >> ~/.bashrc", quiet=True).returncode
+        if returncode != 0:
+            raise RuntimeError(f"Error adding env variable {name}={value} to ~/.bashrc")
+
+    def pass_env_variable(self, name):
+        value = os.getenv(name)
+        if value is not None:
+            self.set_env_variable(name, value)
 
     def run(self, command, quiet=False):
         if self.ros_version:
