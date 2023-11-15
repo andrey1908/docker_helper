@@ -24,6 +24,8 @@ class RosDockerContainer(DockerContainer):
             self.pass_env_variable("RMW_IMPLEMENTATION")
             self.pass_env_variable("ROS_LOCALHOST_ONLY")
 
+        return container_created
+
     def set_env_variable(self, name, value):
         set_env_variable_command = f"export {name}={value}"
         returncode = self.run(f"echo '{set_env_variable_command}' >> ~/.bashrc", quiet=True).returncode
