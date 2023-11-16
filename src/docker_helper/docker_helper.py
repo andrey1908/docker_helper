@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class DockerMounts:
     def __init__(self):
-        self.mount_counter = 0
+        self.mounts_counter = 0
         self.mounts = dict()  # host_folder -> docker_folder
         self.is_mount_pinned = dict()  # host_folder -> bool
         self.modes = dict()  # host_folder -> str
@@ -20,8 +20,8 @@ class DockerMounts:
         if host_folder in self.mounts:
             raise RuntimeError(f"Folder {host_folder} already mounted to {self.mounts[host_folder]}")
         if docker_destination_folder is None:
-            docker_destination_folder = f"/mnt/mount_{self.mount_counter}"
-            self.mount_counter += 1
+            docker_destination_folder = f"/mnt/mount_{self.mounts_counter}"
+            self.mounts_counter += 1
             mount_pinned = False
         else:
             docker_destination_folder = osp.normpath(docker_destination_folder)
