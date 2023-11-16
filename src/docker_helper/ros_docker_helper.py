@@ -4,38 +4,28 @@ import os
 
 class RosDockerContainer(DockerContainer):
     def __init__(self, image_name, container_name, user_name=None):
-        super().__init__(image_name, container_name, user_name=user_name)
         self.ros_version = None
+        super().__init__(image_name, container_name, user_name=user_name)
 
     def create_containter(self, mounts: DockerMounts=None, net='host'):
         container_created = super().create_containter(mounts=mounts, net=net)
+        return container_created
+
+    def _init(self):
+        super()._init()
 
         get_ros_version_command = "rosversion -d"
         self.ros_version = self.run(get_ros_version_command, quiet=True).stdout.rstrip()
 
-        if container_created:
-            if self.container_ip:
-                self.set_env_variable("ROS_IP", self.container_ip)
-            else:
-                self.pass_env_variable("ROS_MASTER_URI")
-                self.pass_env_variable("ROS_IP")
+        if self.container_ip:
+            self.set_environment_variable("ROS_IP", self.container_ip)
+        else:
+            self.pass_environment_variable("ROS_MASTER_URI")
+            self.pass_environment_variable("ROS_IP")
 
-            self.pass_env_variable("ROS_DOMAIN_ID")
-            self.pass_env_variable("RMW_IMPLEMENTATION")
-            self.pass_env_variable("ROS_LOCALHOST_ONLY")
-
-        return container_created
-
-    def set_env_variable(self, name, value):
-        set_env_variable_command = f"export {name}={value}"
-        returncode = self.run(f"echo '{set_env_variable_command}' >> ~/.bashrc", quiet=True).returncode
-        if returncode != 0:
-            raise RuntimeError(f"Error adding env variable {name}={value} to ~/.bashrc")
-
-    def pass_env_variable(self, name):
-        value = os.getenv(name)
-        if value is not None:
-            self.set_env_variable(name, value)
+        self.pass_environment_variable("ROS_DOMAIN_ID")
+        self.pass_environment_variable("RMW_IMPLEMENTATION")
+        self.pass_environment_variable("ROS_LOCALHOST_ONLY")
 
     def run(self, command, quiet=False):
         if self.ros_version:
