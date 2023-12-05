@@ -172,8 +172,8 @@ class DockerContainer:
             mounts.add_folder(mount_entry['Source'], mount_entry['Destination'], mount_entry['Mode'])
         return mounts
 
-    def set_environment_variable(self, name: str, value: str, for_all_container=False):
-        if for_all_container:
+    def set_environment_variable(self, name: str, value: str, glob_var=False):
+        if glob_var:
             value = value.replace('\\', '\\\\').replace('\'', '\\\'')
             set_environment_variable_command = f"export {name}=$'{value}'"
             set_environment_variable_command = \
@@ -190,9 +190,9 @@ class DockerContainer:
         else:
             self._environment_variables[name] = value
 
-    def unset_environment_variable(self, name: str, for_all_container=False):
+    def unset_environment_variable(self, name: str, glob_var=False):
         self._environment_variables.pop(name, None)
-        if for_all_container:
+        if glob_var:
             unset_environment_variable_command = f"unset {name}"
             add_to_bashrc_command = f"echo '{unset_environment_variable_command}' >> ~/.bashrc"
             unset_only_if_set_command = f"if [[ -v {name} ]]; then {add_to_bashrc_command}; fi"
@@ -200,10 +200,10 @@ class DockerContainer:
             if returncode != 0:
                 raise RuntimeError(f"Error adding unset for environment variable {name} to ~/.bashrc")
 
-    def pass_environment_variable(self, name: str, for_all_container=False):
+    def pass_environment_variable(self, name: str, glob_var=False):
         value = os.getenv(name)
         if value is not None:
-            self.set_environment_variable(name, value, for_all_container=for_all_container)
+            self.set_environment_variable(name, value, glob_var=glob_var)
 
     def _set_environment_variables_command(self):
         set_environment_variables_command = str()

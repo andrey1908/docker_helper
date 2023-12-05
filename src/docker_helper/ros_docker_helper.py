@@ -57,7 +57,7 @@ class RosDockerContainer(DockerContainer):
     def connect_to_ros_master(self, ros_master_ip):
         self._environment_variables.pop("ROS_MASTER_URI", None)
         self.set_environment_variable("ROS_MASTER_URI", f"http://{ros_master_ip}:11311",
-            for_all_container=True)
+            glob_var=True)
 
     def rosrun(self, package, executable, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
