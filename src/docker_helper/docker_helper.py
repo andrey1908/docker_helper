@@ -206,14 +206,15 @@ class DockerContainer:
             self.set_environment_variable(name, value, glob_var=glob_var)
 
     def _set_environment_variables_command(self):
-        set_environment_variables_command = str()
+        set_environment_variables_commands = list()
         for name, value in self._environment_variables.items():
             value = value.replace('\\', '\\\\').replace('\'', '\\\'')
-            set_environment_variables_command += f"export {name}=$'{value}' && "
+            set_environment_variables_commands.append(f"export {name}=$'{value}'")
+        set_environment_variables_command = ": " + " && ".join(set_environment_variables_commands)
         return set_environment_variables_command
 
     def run(self, command: str, quiet=False):
-        command = self._set_environment_variables_command() + command
+        command = self._set_environment_variables_command() + " && " + command
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
         docker_command = f"docker exec -it {self.user_argument} {self.container_name} /bin/bash -ic $'{command}'"
         result = subprocess_tee.run(docker_command, quiet=quiet)
@@ -222,7 +223,7 @@ class DockerContainer:
     def run_async(self, command: str, session=''):
         if not session:
             raise RuntimeError("Session name not specified")
-        command = self._set_environment_variables_command() + command
+        command = self._set_environment_variables_command() + " && " + command
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
         async_command = f"tmux new -d -s {session} /bin/bash -c $'{command}'"
         async_command = async_command.replace('\\', '\\\\').replace('\'', '\\\'')
