@@ -55,10 +55,9 @@ class RosDockerContainer(DockerContainer):
                 raise RuntimeError("Error waiting for ros master")
 
     def connect_to_ros_master(self, ros_master_ip):
-        set_ros_master_uri_command = f"export ROS_MASTER_URI=http://{ros_master_ip}:11311"
-        returncode = self.run(f"echo '{set_ros_master_uri_command}' >> ~/.bashrc").returncode
-        if returncode != 0:
-            raise RuntimeError("Error adding ROS_MASTER_URI to ~/.bashrc")
+        self._environment_variables.pop("ROS_MASTER_URI", None)
+        self.set_environment_variable("ROS_MASTER_URI", f"http://{ros_master_ip}:11311",
+            for_all_container=True)
 
     def rosrun(self, package, executable, arguments="", source_files=tuple()):
         if isinstance(source_files, str):
