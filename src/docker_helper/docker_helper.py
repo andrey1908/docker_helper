@@ -143,7 +143,7 @@ class DockerContainer:
         self.run(suppress_redundant_output_command, quiet=True)
 
         get_home_directory_command = "cd ~; pwd"
-        self.home_directory = self.run(get_home_directory_command, quiet=True).stdout.rstrip()
+        self.home_directory = self.check_output(get_home_directory_command).stdout.rstrip()
 
     def get_container_status(self):
         get_container_status_command = "docker container inspect -f '{{.State.Status}}' " + self.container_name
@@ -213,10 +213,18 @@ class DockerContainer:
         set_environment_variables_command = ": " + " && ".join(set_environment_variables_commands)
         return set_environment_variables_command
 
-    def run(self, command: str, quiet=False):
+    def check_output(self, command: str):
+        result = self.run(command, quiet=True, interactive=False)
+        return result
+
+    def run(self, command: str, quiet=False, interactive=True):
+        if interactive:
+            i = 'i'
+        else:
+            i = ''
         command = self._set_environment_variables_command() + " && " + command
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
-        docker_command = f"docker exec -it {self.user_argument} {self.container_name} /bin/bash -ic $'{command}'"
+        docker_command = f"docker exec -{i}t {self.user_argument} {self.container_name} /bin/bash -{i}c $'{command}'"
         result = subprocess_tee.run(docker_command, quiet=quiet)
         return result
 
@@ -227,14 +235,14 @@ class DockerContainer:
         command = command.replace('\\', '\\\\').replace('\'', '\\\'')
         async_command = f"tmux new -d -s {session} /bin/bash -c $'{command}'"
         async_command = async_command.replace('\\', '\\\\').replace('\'', '\\\'')
-        docker_command = f"docker exec -it {self.user_argument} {self.container_name} /bin/bash -ic $'{async_command}'"
+        docker_command = f"docker exec -t {self.user_argument} {self.container_name} /bin/bash -c $'{async_command}'"
         returncode = subprocess_tee.run(docker_command, quiet=True).returncode
         if returncode != 0:
             raise RuntimeError(f"Error running command in async mode:\n  {command}")
 
     def stop_session(self, session: str):
         stop_command = f"(tmux send-keys -t ={session}: C-c) && (tmux a -t ={session} || true)"
-        docker_command = f"docker exec -it {self.user_argument} {self.container_name} /bin/bash -ic '{stop_command}'"
+        docker_command = f"docker exec -t {self.user_argument} {self.container_name} /bin/bash -c '{stop_command}'"
         returncode = subprocess_tee.run(docker_command, quiet=True).returncode
         if returncode != 0:
             raise RuntimeError(f"Error stopping session '{session}'")

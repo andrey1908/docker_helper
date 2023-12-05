@@ -15,7 +15,7 @@ class RosDockerContainer(DockerContainer):
         super()._init()
 
         get_ros_version_command = "rosversion -d"
-        self.ros_version = self.run(get_ros_version_command, quiet=True).stdout.rstrip()
+        self.ros_version = self.check_output(get_ros_version_command).stdout.rstrip()
 
         if self.container_ip:
             self.set_environment_variable("ROS_IP", self.container_ip)
@@ -27,10 +27,14 @@ class RosDockerContainer(DockerContainer):
         self.pass_environment_variable("RMW_IMPLEMENTATION")
         self.pass_environment_variable("ROS_LOCALHOST_ONLY")
 
-    def run(self, command, quiet=False):
+    def check_output(self, command: str):
+        result = super().check_output(command)  # will call self.run(), so 'source' will be done
+        return result
+
+    def run(self, command, quiet=False, interactive=True):
         if self.ros_version:
             command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
-        result = super().run(command, quiet=quiet)
+        result = super().run(command, quiet=quiet, interactive=interactive)
         return result
 
     def run_async(self, command, session=''):
