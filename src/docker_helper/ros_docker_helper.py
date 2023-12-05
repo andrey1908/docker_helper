@@ -40,6 +40,12 @@ class RosDockerContainer(DockerContainer):
             command = f"source /opt/ros/{self.ros_version}/setup.bash && " + command
         super().run_async(command, session=session)
 
+    def roscore_available(self):
+        command = "rostopic list"
+        returncode = self.run(command, quiet=True).returncode
+        roscore_available = (returncode == 0)
+        return roscore_available
+
     def start_roscore(self, wait=True):
         self.run_async("roscore", 'roscore')
         if wait:
