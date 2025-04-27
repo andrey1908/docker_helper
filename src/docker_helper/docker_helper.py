@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class DockerMounts:
     def __init__(self):
-        self.mounts_counter = 0
+        self.unpinned_mounts_counter = 0
         self.mounts = dict()  # host_folder -> docker_folder
         self.is_mount_pinned = dict()  # host_folder -> bool
         self.modes = dict()  # host_folder -> str
@@ -20,8 +20,8 @@ class DockerMounts:
         if host_folder in self.mounts:
             raise RuntimeError(f"Folder {host_folder} already mounted to {self.mounts[host_folder]}")
         if docker_destination_folder is None:
-            docker_destination_folder = f"/mnt/mount_{self.mounts_counter}"
-            self.mounts_counter += 1
+            docker_destination_folder = f"/mnt/mount_{self.unpinned_mounts_counter}"
+            self.unpinned_mounts_counter += 1
             mount_pinned = False
         else:
             docker_destination_folder = osp.normpath(docker_destination_folder)
@@ -181,24 +181,31 @@ class DockerContainer:
             add_to_bashrc_command = f"echo $'{set_environment_variable_command}' >> ~/.bashrc"
             set_only_if_not_set_command = f"if [[ ! -v {name} || ${name} != $'{value}' ]]; then {add_to_bashrc_command}; fi"
 
-            override_value = self._environment_variables.pop(name, None)  # make sure _environment_variables do not override bashrc variables
+            store_value = self._environment_variables.pop(name, None)  # temporarily remove local variable
+                                                                       # to do a proper check if global variable is set
             returncode = self.run(set_only_if_not_set_command, quiet=True).returncode
-            if override_value is not None:
-                self._environment_variables[name] = override_value
+            if store_value is not None:
+                self._environment_variables[name] = store_value
             if returncode != 0:
                 raise RuntimeError(f"Error adding environment variable {name}={value} to ~/.bashrc")
         else:
             self._environment_variables[name] = value
 
     def unset_environment_variable(self, name: str, glob_var=False):
-        self._environment_variables.pop(name, None)
         if glob_var:
             unset_environment_variable_command = f"unset {name}"
             add_to_bashrc_command = f"echo '{unset_environment_variable_command}' >> ~/.bashrc"
             unset_only_if_set_command = f"if [[ -v {name} ]]; then {add_to_bashrc_command}; fi"
+
+            store_value = self._environment_variables.pop(name, None)  # temporarily remove local variable
+                                                                       # to do a proper check if global variable is set
             returncode = self.run(unset_only_if_set_command, quiet=True).returncode
+            if store_value is not None:
+                self._environment_variables[name] = store_value
             if returncode != 0:
                 raise RuntimeError(f"Error adding unset for environment variable {name} to ~/.bashrc")
+        else:
+            self._environment_variables.pop(name, None)
 
     def pass_environment_variable(self, name: str, glob_var=False):
         value = os.getenv(name)
