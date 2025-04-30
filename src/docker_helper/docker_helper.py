@@ -33,16 +33,17 @@ class DockerMounts:
         self._trim_mounts()
 
     def _trim_mounts(self):
-        host_folders_to_remove = set()
-        for i, host_folder in enumerate(self.mounts.keys()):
-            for j, host_sub_folder in enumerate(self.mounts.keys()):
+        host_folders_to_remove = list()
+        for i, host_sub_folder in enumerate(self.mounts.keys()):
+            for j, host_folder in enumerate(self.mounts.keys()):
                 if i == j:
                     continue
-                if osp.commonpath([host_folder, host_sub_folder]) != host_sub_folder:
+                if osp.commonpath([host_folder, host_sub_folder]) != host_folder:
                     continue
-                if self.is_mount_pinned[host_folder]:
+                if self.is_mount_pinned[host_sub_folder]:
                     continue
-                host_folders_to_remove.add(host_folder)
+                host_folders_to_remove.append(host_sub_folder)
+                break
 
         for host_folder_to_remove in host_folders_to_remove:
             self.mounts.pop(host_folder_to_remove)
